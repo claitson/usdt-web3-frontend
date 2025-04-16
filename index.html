@@ -1,0 +1,46 @@
+import { ethers } from 'ethers';
+import { useState } from 'react';
+
+const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+const ABI = [
+  "function transfer(address to, uint amount) public returns (bool)",
+  "function decimals() view returns (uint8)"
+];
+
+export default function EnviarUSDT() {
+  const [destino, setDestino] = useState('');         
+  const [valor, setValor] = useState('');
+  const [status, setStatus] = useState('');
+
+  const enviarUSDT = async () => {
+    try {
+      if (!window.ethereum) throw new Error("MetaMask não encontrada");
+
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contrato = new ethers.Contract(USDT_ADDRESS, ABI, signer);
+
+      const decimais = await contrato.decimals();
+      const valorFormatado = ethers.parseUnits(valor, decimais);
+
+      const tx = await contrato.transfer(destino, valorFormatado);
+      setStatus("Enviando...");
+      await tx.wait();
+      setStatus("Enviado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      setStatus("Erro ao enviar USDT");
+    }
+  };
+
+  return (
+    <div>
+      <h2>Enviar USDT</h2>
+      <input placeholder="Carteira destino" onChange={e => setDestino(e.target.value)} />
+      <input placeholder="Valor (ex: 100)" onChange={e => setValor(e.target.value)} />
+      <button onClick={enviarUSDT}>Enviar</button>
+      <p>{status}</p>
+    </div>
+  );
+}
